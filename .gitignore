@@ -1,0 +1,31 @@
+/data
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+bsc/
+
+# Env
+.env
+
+# Logs
+logs/
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Models
+model/
+models/
+
+# Metrics
+metrics/
+
+# DVC cache
+.dvc/cache/
+
+# OS
+.DS_Store
