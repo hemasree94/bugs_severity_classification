@@ -46,3 +46,23 @@ stages:
       hash: md5
       md5: 7b2e6555c4f072fe7422643c2507bfde
       size: 6503
+  transform:
+    cmd: python src/transform.py
+    deps:
+    - path: data/processed/train.csv
+      hash: md5
+      md5: d19abafb51ff80a763e502ff1786ddde
+      size: 47177
+    - path: data/processed/val.csv
+      hash: md5
+      md5: 7b2e6555c4f072fe7422643c2507bfde
+      size: 6503
+    outs:
+    - path: data/features/train.parquet
+      hash: md5
+      md5: 37b658e35dfbc24e780d9136bf8fefcc
+      size: 2005263
+    - path: data/features/val.parquet
+      hash: md5
+      md5: 2527d81751038161e23a3d0c5cf1617b
+      size: 328503
