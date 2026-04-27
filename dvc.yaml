@@ -1,0 +1,18 @@
+stages:
+  prepare:
+    cmd: python src/preprocess.py
+    deps:
+    - data/bugs.csv
+    - src/preprocess.py
+    params:
+    - prepare.column_to_encode
+    - prepare.columns_to_remove
+    - prepare.label_map
+    - prepare.random_state
+    - prepare.target_column
+    - prepare.test_size
+    - prepare.text_column
+    outs:
+    - data/processed/test.csv
+    - data/processed/train.csv
+    - data/processed/val.csv

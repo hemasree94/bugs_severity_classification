@@ -1,0 +1,12 @@
+md5: 38c16c2c48124bc0faebafd9ba6bea07
+frozen: true
+deps:
+- db:
+    connection: pgsql
+    file_format: csv
+    table: bugs
+outs:
+- md5: 80a3a58aad0c38f7291288d990664807
+  size: 173707
+  hash: md5
+  path: bugs.csv

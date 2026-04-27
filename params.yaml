@@ -1,0 +1,37 @@
+ingest:
+  url: "https://bugzilla.mozilla.org/rest"
+  severity_labels: ["critical", "major", "normal", "minor", "trivial"]
+  products: ["Firefox", "Core", "Firefox for Android", "DevTools", "Toolkit"]
+
+prepare:
+  columns_to_remove: ["priority", "product", "component", "status", "resolution", "created_at", "comment_count", "scraped_at"]
+  test_size: 0.2
+  random_state: 42
+  text_column: "summary"
+  column_to_encode: "severity"
+  target_column: "severity"
+  label_map: {
+        "trivial": 0,
+        "minor": 1,
+        "normal": 2,
+        "major": 3,
+        "critical": 4,
+    }
+    
+train:
+  random_state: 42
+  tfidf_max_features: 5000
+  tfidf_ngram_max: 2
+  n_estimators: 100
+  models:
+    - logistic_regression
+    - random_forest
+
+evaluate:
+  metrics: ["accuracy", "precision", "recall", "f1_score"]
+
+retrain:
+  MIN_FEEDBACK_FOR_RETRAIN: 10
+  DRIFT_THRESHOLD: 0.1
+  DRIFT_STD_THRESHOLD: 3
+  RETRAIN_CHECK_INTERVAL: 3600

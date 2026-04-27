@@ -1,0 +1,48 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python src/preprocess.py
+    deps:
+    - path: data/bugs.csv
+      hash: md5
+      md5: 80a3a58aad0c38f7291288d990664807
+      size: 173707
+    - path: src/preprocess.py
+      hash: md5
+      md5: 995bb1a7e200da14c2c3ebe41afcc0ce
+      size: 4371
+    params:
+      params.yaml:
+        prepare.column_to_encode: severity
+        prepare.columns_to_remove:
+        - priority
+        - product
+        - component
+        - status
+        - resolution
+        - created_at
+        - comment_count
+        - scraped_at
+        prepare.label_map:
+          trivial: 0
+          minor: 1
+          normal: 2
+          major: 3
+          critical: 4
+        prepare.random_state: 42
+        prepare.target_column: severity
+        prepare.test_size: 0.2
+        prepare.text_column: summary
+    outs:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 26ab019cfa90de345169a11cd131cfa7
+      size: 13691
+    - path: data/processed/train.csv
+      hash: md5
+      md5: d19abafb51ff80a763e502ff1786ddde
+      size: 47177
+    - path: data/processed/val.csv
+      hash: md5
+      md5: 7b2e6555c4f072fe7422643c2507bfde
+      size: 6503
