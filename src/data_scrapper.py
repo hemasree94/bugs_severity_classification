@@ -4,6 +4,11 @@ import logging
 import time
 import os
 from datetime import datetime, UTC
+import yaml
+import argparse
+from database import init_db
+
+
 
 log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
@@ -21,34 +26,10 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# -----------------------------
-# Config
-# -----------------------------
-BUGZILLA_BASE = "https://bugzilla.mozilla.org/rest"
+params_file = yaml.safe_load(open("params.yaml"))
 
-SEVERITY_LABELS = ["critical", "major", "normal", "minor", "trivial"]
-
-PRODUCTS = [
-    "Firefox",
-    "Core",
-    "Firefox for Android",
-    "DevTools",
-    "Toolkit",
-]
-
-SEVERITY_REMAP = {
-    "critical": "critical",
-    "major": "high",
-    "normal": "medium",
-    "minor": "low",
-    "trivial": "low",
-}
-
-# -----------------------------
-# Fetch bugs
-# -----------------------------
 def fetch_bugs_page(product, severity, offset, limit=100):
-    url = f"{BUGZILLA_BASE}/bug"
+    url = f"{params_file['ingest']['url']}/bug"
 
     params = {
         "product": product,
@@ -82,13 +63,10 @@ def fetch_bugs_page(product, severity, offset, limit=100):
         return []
 
 
-# -----------------------------
-# Scrape one product
-# -----------------------------
 def scrape_product(product, max_per_severity=400):
     all_bugs = []
 
-    for severity in SEVERITY_LABELS:
+    for severity in params_file['ingest']['severity_labels']:
         logger.info(f"Scraping {product} | severity={severity}")
 
         offset = 0
@@ -101,19 +79,12 @@ def scrape_product(product, max_per_severity=400):
                 break
 
             for bug in batch:
-                raw_severity = bug.get("severity", "").lower()
-                mapped = SEVERITY_REMAP.get(raw_severity)
-
-                if not mapped:
-                    continue
-
                 summary = bug.get("summary", "") or ""
 
                 collected.append({
                     "id": bug.get("id"),
                     "summary": summary,
-                    "raw_severity": raw_severity,
-                    "severity": mapped,
+                    "severity": bug.get("severity", ""),
                     "priority": bug.get("priority", ""),
                     "product": bug.get("product", ""),
                     "component": bug.get("component", ""),
@@ -139,15 +110,12 @@ def scrape_product(product, max_per_severity=400):
     return all_bugs
 
 
-# -----------------------------
-# Main pipeline
-# -----------------------------
-def run_scraper(output_path="data/raw/bugs.csv", max_per_severity=200):
+def run_scraper(max_per_severity=2000):
     logger.info("Starting Bugzilla scraper")
 
     all_bugs = []
 
-    for product in PRODUCTS:
+    for product in params_file['ingest']['products']:
         logger.info(f"Processing product: {product}")
 
         bugs = scrape_product(product, max_per_severity)
@@ -163,23 +131,43 @@ def run_scraper(output_path="data/raw/bugs.csv", max_per_severity=200):
     # Remove duplicates
     df.drop_duplicates(subset="id", inplace=True)
 
-    # Add timestamp (fixed version)
+    # Add timestamp
     df["scraped_at"] = datetime.now(UTC).isoformat()
+    # Rename to match DB
+    df.rename(columns={
+        "creation_time": "created_at"
+    }, inplace=True)
 
-    # Save
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    df.to_csv(output_path, index=False)
+    # Convert datetime
+    df["scraped_at"] = datetime.now(UTC)
+    df["scraped_at"] = datetime.now(UTC)
+    df.to_sql(
+            name="bugs",
+            con=engine,
+            if_exists="append",
+            index=False,
+            chunksize=500
+        )
 
     # Log stats
-    logger.info(f"Saved {len(df)} bugs to {output_path}")
+    logger.info(f"Saved {len(df)} bugs to database")
     logger.info(f"Severity distribution:\n{df['severity'].value_counts()}")
-    logger.info(f"Raw severity distribution:\n{df['raw_severity'].value_counts()}")
-
-    return output_path
 
 
-# -----------------------------
-# Run
-# -----------------------------
 if __name__ == "__main__":
-    run_scraper()
+    
+    engine = init_db()      
+    parser = argparse.ArgumentParser(description="Bugzilla Scraper")
+
+    parser.add_argument(
+        "--max-per-severity",
+        type=int,
+        default=50,
+        help="Maximum bugs per severity"
+    )
+
+    args = parser.parse_args()
+
+    run_scraper(
+        max_per_severity=args.max_per_severity
+    )
