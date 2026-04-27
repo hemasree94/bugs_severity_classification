@@ -19,9 +19,11 @@ stages:
   transform:
     cmd: python src/transform.py
     deps:
+    - data/processed/test.csv
     - data/processed/train.csv
     - data/processed/val.csv
     outs:
+    - data/features/test.parquet
     - data/features/train.parquet
     - data/features/val.parquet
   train:
