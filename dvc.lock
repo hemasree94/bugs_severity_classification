@@ -66,3 +66,28 @@ stages:
       hash: md5
       md5: 2527d81751038161e23a3d0c5cf1617b
       size: 328503
+  train:
+    cmd: python src/train.py --train-features data/features/train.parquet 
+      --val-features data/features/val.parquet
+    deps:
+    - path: data/features/train.parquet
+      hash: md5
+      md5: 37b658e35dfbc24e780d9136bf8fefcc
+      size: 2005263
+    - path: data/features/val.parquet
+      hash: md5
+      md5: 2527d81751038161e23a3d0c5cf1617b
+      size: 328503
+    - path: src/train.py
+      hash: md5
+      md5: 5c95182a2c120e3a583ab9a5d781c453
+      size: 7847
+    outs:
+    - path: metrics/best_model_metrics.json
+      hash: md5
+      md5: ac6be772b1c22cc6c603838e24a3ec27
+      size: 75
+    - path: models/best_model.pkl
+      hash: md5
+      md5: be520328df790785567f170530f1bce4
+      size: 16146

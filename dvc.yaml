@@ -24,3 +24,13 @@ stages:
     outs:
     - data/features/train.parquet
     - data/features/val.parquet
+  train:
+    cmd: python src/train.py --train-features data/features/train.parquet 
+      --val-features data/features/val.parquet
+    deps:
+    - data/features/train.parquet
+    - data/features/val.parquet
+    - src/train.py
+    outs:
+    - metrics/best_model_metrics.json
+    - models/best_model.pkl
