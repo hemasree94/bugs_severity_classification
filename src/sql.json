@@ -1,0 +1,9 @@
+{
+  "table_creation": f"CREATE TABLE IF NOT EXISTS {db_name}",
+
+  "users_table": "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'developer', created_at TEXT NOT NULL);",
+
+  "predictions_table": "CREATE TABLE IF NOT EXISTS predictions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, predicted TEXT NOT NULL, summary TEXT NOT NULL, summary_len INTEGER GENERATED ALWAYS AS (LENGTH(summary)) STORED, summary_word_count INTEGER GENERATED ALWAYS AS (LENGTH(summary) - LENGTH(REPLACE(summary, ' ', '')) + 1) STORED, drift_warning INTEGER DEFAULT 0, created_at TEXT NOT NULL);",
+
+  "feedback_table": "CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, prediction_id INTEGER NOT NULL, user_id INTEGER NOT NULL, correct INTEGER NOT NULL, ground_truth TEXT, created_at TEXT NOT NULL, used_in_retrain INTEGER DEFAULT 0);"
+}

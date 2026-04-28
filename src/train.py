@@ -195,6 +195,14 @@ def run_training(train_path, val_path, model_output_path, metrics_path):
     with open(model_output_path, "wb") as f:
         pickle.dump({"model": best_model}, f)
     logger.info(f"Best model saved to {model_output_path} (f1={best_f1:.4f})")
+    # Save training label distribution for drift detection
+    from collections import Counter
+    train_label_counts = Counter(y_train.tolist())
+    train_dist = {label: train_label_counts.get(label, 0) / len(y_train) for label in LABEL_NAMES}
+    os.makedirs("metrics", exist_ok=True)
+    with open("metrics/train_distribution.json", "w") as f:
+        json.dump(train_dist, f, indent=2)
+    logger.info(f"Training distribution saved to metrics/train_distribution.json")
 
     os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
     with open(metrics_path, "w") as f:
