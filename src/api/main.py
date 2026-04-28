@@ -13,8 +13,6 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 # --- DRIFT DETECTION ---
-import sys
-sys.path.insert(0, '/home/hemasree/bugs_severity_classification/src')
 from drift_detection import run_drift_detection
 
 # --- PROMETHEUS ---
