@@ -9,7 +9,7 @@ This project is a bug severity classification system with a data engineering pip
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/hemasree94/bugs_severity_classification
 cd bugs_severity_classification
 ```
 
