@@ -1,0 +1,584 @@
+{
+  "title": "Bugs Classification — Monitoring Dashboard",
+  "description": "Real-time monitoring of the Bug Severity Prediction FastAPI app with system metrics.",
+  "tags": ["bugs", "fastapi", "prometheus"],
+  "timezone": "browser",
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "App Status",
+      "description": "Shows whether the FastAPI bugs app is UP or DOWN.",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "up{job=\"bugs_app\"}",
+          "legendFormat": "App"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 2,
+      "title": "Total Predictions",
+      "description": "Cumulative number of bug severity predictions made since app started.",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(bugs_predictions_total)",
+          "legendFormat": "Predictions"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "unit": "short"
+        }
+      }
+    },
+
+    {
+      "id": 3,
+      "title": "Active Requests",
+      "description": "Number of requests currently being processed by the app.",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "bugs_active_requests",
+          "legendFormat": "Active"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 20 }
+            ]
+          },
+          "unit": "short"
+        }
+      }
+    },
+
+    {
+      "id": 4,
+      "title": "Feedback Accuracy %",
+      "description": "Percentage of predictions marked correct by users via feedback.",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(bugs_feedback_total{correct=\"true\"}) / sum(bugs_feedback_total) * 100",
+          "legendFormat": "Accuracy"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 75 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 5,
+      "title": "Total Users in DB",
+      "description": "Current count of registered users in the database.",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "bugs_total_users_in_db",
+          "legendFormat": "Users"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "unit": "short"
+        }
+      }
+    },
+
+    {
+      "id": 6,
+      "title": "Predictions by Severity (Rate per minute)",
+      "description": "Rate of predictions grouped by severity label — shows which bug types are most frequent.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(bugs_predictions_total{severity=\"critical\"}[1m])", "legendFormat": "Critical" },
+        { "expr": "rate(bugs_predictions_total{severity=\"major\"}[1m])", "legendFormat": "Major" },
+        { "expr": "rate(bugs_predictions_total{severity=\"normal\"}[1m])", "legendFormat": "Normal" },
+        { "expr": "rate(bugs_predictions_total{severity=\"minor\"}[1m])", "legendFormat": "Minor" },
+        { "expr": "rate(bugs_predictions_total{severity=\"trivial\"}[1m])", "legendFormat": "Trivial" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Critical" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Major" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Normal" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Minor" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Trivial" }, "properties": [{ "id": "color", "value": { "fixedColor": "gray", "mode": "fixed" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 7,
+      "title": "Prediction Latency (p50, p95, p99)",
+      "description": "Distribution of prediction request durations. High p95/p99 indicates slowdowns.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(bugs_prediction_latency_seconds_bucket[5m]))", "legendFormat": "p50 (median)" },
+        { "expr": "histogram_quantile(0.95, rate(bugs_prediction_latency_seconds_bucket[5m]))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, rate(bugs_prediction_latency_seconds_bucket[5m]))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "p95" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p99" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p50 (median)" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 8,
+      "title": "Login — Success vs Failure Rate",
+      "description": "Tracks login attempts per minute. Spikes in failure may indicate brute force attempts.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(bugs_logins_total{status=\"success\"}[1m])", "legendFormat": "Success" },
+        { "expr": "rate(bugs_logins_total{status=\"failure\"}[1m])", "legendFormat": "Failure" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Success" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Failure" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 9,
+      "title": "Feedback Submissions (Correct vs Incorrect)",
+      "description": "Rate of feedback submissions per minute categorized by correctness.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(bugs_feedback_total{correct=\"true\"}[1m])", "legendFormat": "Correct" },
+        { "expr": "rate(bugs_feedback_total{correct=\"false\"}[1m])", "legendFormat": "Incorrect" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Correct" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Incorrect" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 10,
+      "title": "CPU Usage % (System)",
+      "description": "System-level CPU utilization from node_exporter. Correlate with bulk prediction spikes.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 20, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[2m])) * 100)",
+          "legendFormat": "CPU %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 11,
+      "title": "RAM Usage % (System)",
+      "description": "System RAM utilization. High usage during bulk predictions indicates memory pressure.",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 20, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "RAM %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 12,
+      "title": "Disk Usage % (System)",
+      "description": "Root filesystem disk usage. Alert fires above 90%.",
+      "type": "gauge",
+      "gridPos": { "x": 16, "y": 20, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
+          "legendFormat": "Disk %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 13,
+      "title": "HTTP Error Rate",
+      "description": "Rate of HTTP 4xx/5xx errors per minute across all endpoints.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(bugs_http_errors_total[1m])",
+          "legendFormat": "{{ endpoint }} - {{ status_code }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 14,
+      "title": "Average Prediction Confidence Score",
+      "description": "Mean confidence score of predictions over time using summary _sum / _count.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(bugs_prediction_confidence_sum[5m]) / rate(bugs_prediction_confidence_count[5m])",
+          "legendFormat": "Avg Confidence {{ severity }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 15,
+      "title": "🔴 DRIFT DETECTION STATUS",
+      "description": "Overall drift detection status. 0=No drift, 1=Drift detected. Check reasons in logs.",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 36, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "bugs_drift_detected",
+          "legendFormat": "Drift Status"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "✓ HEALTHY", "color": "green" }, "1": { "text": "⚠ DRIFT!", "color": "red" } } }
+          ],
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "short",
+          "custom": { "lineWidth": 2 }
+        }
+      }
+    },
+
+    {
+      "id": 16,
+      "title": "Feedback Accuracy %",
+      "description": "Percentage of predictions marked correct by users (target: >90%).",
+      "type": "gauge",
+      "gridPos": { "x": 6, "y": 36, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "bugs_feedback_accuracy_percent",
+          "legendFormat": "Accuracy %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 85 },
+              { "color": "green", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 17,
+      "title": "Accuracy Drift Detection",
+      "description": "Flags when feedback accuracy drops below 90% threshold (0=OK, 1=DRIFT).",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 36, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "bugs_accuracy_drift",
+          "legendFormat": "Accuracy Drift"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "✓ OK", "color": "green" }, "1": { "text": "✗ DRIFTED", "color": "red" } } }
+          ],
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 18,
+      "title": "Distribution Drift (KS Test)",
+      "description": "Flags when KS test p-value < 0.05 (0=OK, 1=DRIFT).",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 36, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "bugs_distribution_drift",
+          "legendFormat": "Distribution Drift"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "✓ OK", "color": "green" }, "1": { "text": "✗ DRIFTED", "color": "red" } } }
+          ],
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 19,
+      "title": "KS Test Statistics",
+      "description": "KS statistic and p-value from distribution drift check. Lower p-value = more significant drift.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 42, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "bugs_ks_test_statistic", "legendFormat": "KS Statistic" },
+        { "expr": "bugs_ks_test_pvalue", "legendFormat": "P-value (threshold=0.05)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "KS Statistic" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "P-value (threshold=0.05)" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+
+    {
+      "id": 20,
+      "title": "Accuracy Trend (Feedback %)",
+      "description": "Trend of feedback accuracy over time. Should stay above 90% for healthy model.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 42, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "bugs_feedback_accuracy_percent",
+          "legendFormat": "Feedback Accuracy %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "lineWidth": 3 },
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 85 },
+              { "color": "green", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    }
+
+  ],
+
+  "templating": { "list": [] },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {}
+}

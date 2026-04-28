@@ -1,0 +1,151 @@
+groups:
+  - name: bugs_app_alerts
+    rules:
+
+      # --- FAILURES ---
+
+      # App is completely down
+      - alert: BugsAppDown
+        expr: up{job="bugs_app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Bugs app is DOWN"
+          description: "The FastAPI bugs classification app has been unreachable for 1 minute."
+
+      # High login failure rate (more than 5 failures in 5 min)
+      - alert: HighLoginFailureRate
+        expr: increase(bugs_logins_total{status="failure"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High login failure rate"
+          description: "More than 5 failed login attempts in the last 5 minutes."
+
+      # High HTTP error rate
+      - alert: HighHTTPErrorRate
+        expr: increase(bugs_http_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate"
+          description: "More than 10 HTTP errors in the last 5 minutes."
+
+      # --- RESOURCE OVERUSE ---
+
+      # CPU usage above 80% for 2 minutes
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CPU usage above 80%"
+          description: "System CPU has exceeded 80% for more than 2 minutes."
+
+      # RAM usage above 85%
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory usage above 85%"
+          description: "System RAM usage has exceeded 85% for more than 2 minutes."
+
+      # Disk usage above 90%
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk usage above 90%"
+          description: "Root disk usage has exceeded 90%."
+
+      # --- ANOMALIES ---
+
+      # Prediction latency too high (p95 above 2 seconds)
+      - alert: HighPredictionLatency
+        expr: histogram_quantile(0.95, rate(bugs_prediction_latency_seconds_bucket[5m])) > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prediction latency is too high"
+          description: "95th percentile prediction latency has exceeded 2 seconds."
+
+      # No predictions made in last 15 minutes (app idle / possibly broken)
+      - alert: NoPredictionsReceived
+        expr: increase(bugs_predictions_total[15m]) == 0
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: "No predictions in last 15 minutes"
+          description: "No bug severity predictions have been made in the past 15 minutes."
+
+      # Too many active requests piling up (possible bottleneck)
+      - alert: TooManyActiveRequests
+        expr: bugs_active_requests > 20
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many active requests"
+          description: "More than 20 requests are being processed simultaneously."
+
+      # --- DRIFT DETECTION ---
+
+      # Overall drift detected
+      - alert: DataDriftDetected
+        expr: bugs_drift_detected == 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Data drift detected"
+          description: "The system has detected data drift. Model predictions may be unreliable."
+
+      # Accuracy drift specifically
+      - alert: AccuracyDrift
+        expr: bugs_accuracy_drift == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model accuracy has dropped"
+          description: "Feedback accuracy is below the 90% threshold. Review recent predictions for quality issues."
+
+      # Distribution drift detected
+      - alert: DistributionDrift
+        expr: bugs_distribution_drift == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Input distribution has shifted"
+          description: "KS test indicates the production data distribution differs significantly from training data."
+
+      # Feedback accuracy too low
+      - alert: FeedbackAccuracyLow
+        expr: bugs_feedback_accuracy_percent < 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Feedback accuracy below 85%"
+          description: "Model feedback accuracy is {{ $value | humanize }}%, below target of 85%."
+
+      # KS test p-value indicates significant shift
+      - alert: SignificantDistributionShift
+        expr: bugs_ks_test_pvalue < 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Significant KS test p-value"
+          description: "KS test p-value is {{ $value | humanize }}, indicating significant distribution shift (p < 0.05)."
