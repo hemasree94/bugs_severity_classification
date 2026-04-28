@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BugSense — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --border: #475569; --accent: #3b82f6; --accent2: #f97316;
+    --text: #e2e8f0; --muted: #94a3b8; --success: #10b981;
+    --error: #ef4444; --warn: #f59e0b;
+  }
+  :root.light {
+    --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9;
+    --border: #cbd5e1; --accent: #3b82f6; --accent2: #f97316;
+    --text: #1e293b; --muted: #64748b; --success: #10b981;
+    --error: #ef4444; --warn: #f59e0b;
+  }
+  body { font-family: 'DM Mono', monospace; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; border-bottom: 1px solid var(--border);
+    background: var(--surface); position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: var(--accent); }
+  .nav-links { display: flex; gap: 8px; }
+  .nav-link {
+    padding: 7px 14px; border-radius: 6px; font-size: 13px;
+    color: var(--muted); text-decoration: none;
+    font-family: 'Syne', sans-serif; font-weight: 600; transition: all 0.2s;
+  }
+  .nav-link:hover  { color: var(--text); background: var(--surface2); }
+  .nav-link.active { color: var(--accent); }
+  .theme-toggle {
+    padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 12px; transition: all 0.2s; margin-left: 8px;
+  }
+  .theme-toggle:hover { background: var(--border); }
+  .nav-right { display: flex; align-items: center; }
+  .btn-logout {
+    padding: 7px 14px; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 6px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 12px; transition: all 0.2s; margin-left: 10px;
+  }
+  .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+  .page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 8px; letter-spacing: -1px; }
+  .page-sub { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 26px; }
+
+  .section-title {
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 14px; margin-top: 28px;
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+  }
+
+  .model-status {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 24px;
+  }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .status-online  { background: var(--success); box-shadow: 0 0 8px var(--success); }
+  .status-offline { background: var(--error); }
+  .status-text { font-size: 14px; }
+
+  /* Tools Grid Styling */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 0 24px 24px;
+  }
+  .tool-link {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); text-decoration: none;
+    font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .tool-link:hover { 
+    background: var(--accent); 
+    color: white; 
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .tool-link.primary {
+    background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); color: var(--accent);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    padding: 12px 16px; text-align: left; font-size: 11px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid var(--border); background: var(--surface2);
+  }
+  td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(59,130,246,0.04); }
+
+  .role-pill {
+    display: inline-block; padding: 2px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .role-developer   { background: rgba(59,130,246,0.2); color: var(--accent); }
+  .role-qa_engineer { background: rgba(249,115,22,0.2); color: var(--accent2); }
+  .role-admin       { background: rgba(16,185,129,0.2); color: var(--success); }
+
+  .drift-indicator {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 20px; border-top: 1px solid var(--border);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">BugSense</span>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html">Predict</a>
+    <a class="nav-link" href="history.html">History</a>
+    <a class="nav-link active" href="admin.html">Admin</a>
+  </div>
+  <div class="nav-right">
+    <span class="badge" style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;background:rgba(16,185,129,0.2);color:var(--success)">Admin</span>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-title">Admin Dashboard</div>
+  <div class="page-sub">System overview, model status, and user management</div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Predictions</div>
+      <div class="stat-value" id="stat-preds">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Users</div>
+      <div class="stat-value" id="stat-users">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Feedback Count</div>
+      <div class="stat-value" id="stat-feedback">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Drift Alerts</div>
+      <div class="stat-value" id="stat-drift" style="color:var(--warn)">—</div>
+    </div>
+  </div>
+
+  <div class="section-title">Infrastructure & Tools</div>
+  <div class="card">
+    <div class="model-status">
+      <div class="status-dot" id="status-dot"></div>
+      <span class="status-text" id="status-text">Checking system status...</span>
+    </div>
+
+    <div class="tools-grid">
+      <a class="tool-link primary" id="mlflow-link" href="#" target="_blank">MLflow Dashboard</a>
+      <a class="tool-link" id="airflow-link" href="#" target="_blank">Airflow UI</a>
+      <a class="tool-link" id="grafana-link" href="#" target="_blank">Grafana Metrics</a>
+      <a class="tool-link" id="prometheus-link" href="#" target="_blank">Prometheus</a>
+      <a class="tool-link" id="api-docs-link" href="#" target="_blank">API Docs (Swagger)</a>
+      <a class="tool-link" id="alert-link" href="#" target="_blank">Alertmanager</a>
+    </div>
+
+    <div class="drift-indicator" id="drift-indicator">
+      <span style="color:var(--muted)">Active Drift Alerts: </span>
+      <span id="drift-count" style="font-weight: 800; margin-left: 5px;">—</span>
+    </div>
+  </div>
+
+  <div class="section-title">Users</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody id="users-body">
+        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+// Theme toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.classList.contains('light');
+  if (isDark) {
+    html.classList.remove('light');
+    localStorage.setItem('theme', 'dark');
+    document.getElementById('theme-btn').textContent = '☀️';
+  } else {
+    html.classList.add('light');
+    localStorage.setItem('theme', 'light');
+    document.getElementById('theme-btn').textContent = '🌙';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const theme = localStorage.getItem('theme') || 'dark';
+  if (theme === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-btn').textContent = '🌙';
+  }
+});
+
+const API   = "http://localhost:8000";
+const token = localStorage.getItem('token');
+const role  = localStorage.getItem('role');
+
+if (!token) window.location.href = 'login.html';
+if (role !== 'admin') window.location.href = 'index.html';
+
+function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+async function loadStats() {
+  try {
+    const res  = await fetch(`${API}/admin/stats`, { headers: {'Authorization': `Bearer ${token}`} });
+    const data = await res.json();
+
+    document.getElementById('stat-preds').textContent    = data.total_predictions;
+    document.getElementById('stat-users').textContent    = data.total_users;
+    document.getElementById('stat-feedback').textContent = data.total_feedback;
+    document.getElementById('stat-drift').textContent    = data.drift_alerts;
+
+    const dot  = document.getElementById('status-dot');
+    const txt  = document.getElementById('status-text');
+    if (data.model_ready) {
+      dot.className = 'status-dot status-online';
+      txt.textContent = 'System Operational';
+    } else {
+      dot.className = 'status-dot status-offline';
+      txt.textContent = 'System Maintenance';
+    }
+
+    // Set URLs from API response
+    // Assuming your backend returns these fields. If not, you can hardcode them here.
+    document.getElementById('mlflow-link').href     = data.mlflow_url || '#';
+    document.getElementById('airflow-link').href    = data.airflow_url || '#';
+    document.getElementById('grafana-link').href    = data.grafana_url || '#';
+    document.getElementById('prometheus-link').href = data.prometheus_url || '#';
+    document.getElementById('api-docs-link').href   = data.api_docs_url || `${API}/docs`;
+    document.getElementById('alert-link').href      = data.alertmanager_url || '#';
+
+    const dc = document.getElementById('drift-count');
+    dc.textContent = data.drift_alerts + ' alerts';
+    dc.style.color = data.drift_alerts > 0 ? 'var(--warn)' : 'var(--success)';
+
+  } catch(e) { console.error(e); }
+}
+
+async function loadUsers() {
+  try {
+    const res  = await fetch(`${API}/admin/users`, { headers: {'Authorization': `Bearer ${token}`} });
+    const rows = await res.json();
+    const tbody = document.getElementById('users-body');
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">No users yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(u => `
+      <tr>
+        <td style="color:var(--muted)">${u.id}</td>
+        <td>${u.username}</td>
+        <td style="color:var(--muted)">${u.email}</td>
+        <td><span class="role-pill role-${u.role}">${u.role.replace('_',' ')}</span></td>
+        <td style="color:var(--muted);font-size:11px">${new Date(u.created_at).toLocaleDateString()}</td>
+      </tr>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+loadStats();
+loadUsers();
+</script>
+</body>
+</html>

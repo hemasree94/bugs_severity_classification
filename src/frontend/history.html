@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BugSense — History</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --border: #475569; --accent: #3b82f6; --accent2: #f97316;
+    --text: #e2e8f0; --muted: #94a3b8; --success: #10b981;
+    --error: #ef4444; --warn: #f59e0b;
+  }
+  :root.light {
+    --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9;
+    --border: #cbd5e1; --accent: #3b82f6; --accent2: #f97316;
+    --text: #1e293b; --muted: #64748b; --success: #10b981;
+    --error: #ef4444; --warn: #f59e0b;
+  }
+  body { font-family: 'DM Mono', monospace; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; border-bottom: 1px solid var(--border);
+    background: var(--surface); position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: var(--accent); }
+  .nav-links { display: flex; gap: 8px; }
+  .nav-link {
+    padding: 7px 14px; border-radius: 6px; font-size: 13px;
+    color: var(--muted); text-decoration: none;
+    font-family: 'Syne', sans-serif; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .nav-link:hover  { color: var(--text); background: var(--surface2); }
+  .nav-link.active { color: var(--accent); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .theme-toggle {
+    padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 12px; transition: all 0.2s;
+  }
+  .theme-toggle:hover { background: var(--border); }
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .badge-qa_engineer { background: rgba(249,115,22,0.2); color: var(--accent2); }
+  .badge-admin       { background: rgba(16,185,129,0.2);  color: var(--success); }
+  .btn-logout {
+    padding: 7px 14px; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 6px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 12px; transition: all 0.2s;
+  }
+  .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+  .page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 8px; letter-spacing: -1px; }
+  .page-sub { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  .table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  th {
+    padding: 12px 16px; text-align: left; font-size: 11px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid var(--border); font-weight: 500;
+    background: var(--surface2);
+  }
+  td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(59,130,246,0.04); }
+
+  .sev-pill {
+    display: inline-block; padding: 2px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .sev-trivial  { background: rgba(148,163,184,0.2); color: var(--muted); }
+  .sev-minor    { background: rgba(16,185,129,0.2);  color: var(--success); }
+  .sev-normal   { background: rgba(245,158,11,0.15);  color: var(--warn); }
+  .sev-major    { background: rgba(249,115,22,0.2); color: var(--accent2); }
+  .sev-critical { background: rgba(239,68,68,0.2);   color: var(--error); }
+
+  .summary-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+  .loading { text-align: center; padding: 40px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">BugSense</span>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html">Predict</a>
+    <a class="nav-link active" href="history.html">History</a>
+    <a class="nav-link" id="nav-admin" href="admin.html" style="display:none">Admin</a>
+  </div>
+  <div class="nav-right">
+    <span class="badge" id="role-badge"></span>
+    <span style="font-size:13px;color:var(--muted)" id="nav-username"></span>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-title">Prediction History</div>
+  <div class="page-sub">All predictions with feedback status</div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Feedback</div>
+      <div class="stat-value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Correct</div>
+      <div class="stat-value" id="stat-correct" style="color:var(--success)">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Accuracy</div>
+      <div class="stat-value" id="stat-accuracy" style="color:var(--accent)">—</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Summary</th>
+          <th>Predicted</th>
+          <th>Confidence</th>
+          <th>Feedback</th>
+          <th>Correction</th>
+          <th>User</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody id="history-body">
+        <tr><td colspan="8" class="loading">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+// Theme toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.classList.contains('light');
+  if (isDark) {
+    html.classList.remove('light');
+    localStorage.setItem('theme', 'dark');
+    document.getElementById('theme-btn').textContent = '☀️';
+  } else {
+    html.classList.add('light');
+    localStorage.setItem('theme', 'light');
+    document.getElementById('theme-btn').textContent = '🌙';
+  }
+}
+
+// Apply saved theme on load
+document.addEventListener('DOMContentLoaded', () => {
+  const theme = localStorage.getItem('theme') || 'dark';
+  if (theme === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-btn').textContent = '🌙';
+  } else {
+    document.getElementById('theme-btn').textContent = '☀️';
+  }
+});
+
+const API   = "http://localhost:8000";
+const token = localStorage.getItem('token');
+const role  = localStorage.getItem('role');
+
+if (!token) window.location.href = 'login.html';
+if (role !== 'qa_engineer' && role !== 'admin') window.location.href = 'index.html';
+
+document.getElementById('nav-username').textContent = localStorage.getItem('username');
+const rb = document.getElementById('role-badge');
+rb.textContent = role.replace('_', ' ');
+rb.className = `badge badge-${role}`;
+
+if (role === 'admin') document.getElementById('nav-admin').style.display = 'inline';
+
+function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/feedback/stats`, {
+      headers: {'Authorization': `Bearer ${token}`}
+    });
+    const data = await res.json();
+    document.getElementById('stat-total').textContent   = data.total ?? 0;
+    document.getElementById('stat-correct').textContent = data.correct ?? 0;
+    document.getElementById('stat-accuracy').textContent = data.accuracy_pct != null ? data.accuracy_pct + '%' : '—';
+  } catch(e) { console.error(e); }
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API}/history`, {
+      headers: {'Authorization': `Bearer ${token}`}
+    });
+    const rows = await res.json();
+    const tbody = document.getElementById('history-body');
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="loading">No predictions yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td style="color:var(--muted)">#${r.id}</td>
+        <td class="summary-cell" title="${r.summary}">${r.summary}</td>
+        <td><span class="sev-pill sev-${r.predicted}">${r.predicted}</span></td>
+        <td>${Math.round(r.confidence * 100)}%</td>
+        <td>${r.feedback_correct === 1 ? '<span style="color:var(--success)">✓</span>' :
+              r.feedback_correct === 0 ? '<span style="color:var(--error)">✗</span>' :
+              '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${r.ground_truth ? `<span class="sev-pill sev-${r.ground_truth}">${r.ground_truth}</span>` : '—'}</td>
+        <td style="color:var(--muted)">${r.username}</td>
+        <td style="color:var(--muted);font-size:11px">${new Date(r.created_at).toLocaleString()}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+loadStats();
+loadHistory();
+</script>
+</body>
+</html>

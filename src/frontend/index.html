@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BugSense — Predict</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --border: #475569; --accent: #3b82f6; --accent2: #f97316;
+    --text: #e2e8f0; --muted: #94a3b8; --success: #10b981;
+    --error: #ef4444; --warn: #f59e0b;
+  }
+  :root.light {
+    --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9;
+    --border: #cbd5e1; --accent: #3b82f6; --accent2: #f97316;
+    --text: #1e293b; --muted: #64748b; --success: #10b981;
+    --error: #ef4444; --warn: #f59e0b;
+  }
+  body { font-family: 'DM Mono', monospace; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; border-bottom: 1px solid var(--border);
+    background: var(--surface); position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: var(--accent); }
+  .nav-links { display: flex; gap: 8px; align-items: center; }
+  .nav-link {
+    padding: 7px 14px; border-radius: 6px; font-size: 13px;
+    color: var(--muted); text-decoration: none; cursor: pointer;
+    transition: all 0.2s; font-family: 'Syne', sans-serif; font-weight: 600;
+    border: none; background: none;
+  }
+  .nav-link:hover  { color: var(--text); background: var(--surface2); }
+  .nav-link.active { color: var(--accent); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .theme-toggle {
+    padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 12px; transition: all 0.2s;
+  }
+  .theme-toggle:hover { background: var(--border); }
+  .badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 11px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .badge-developer   { background: rgba(59,130,246,0.2); color: var(--accent); }
+  .badge-qa_engineer { background: rgba(249,115,22,0.2); color: var(--accent2); }
+  .badge-admin       { background: rgba(16,185,129,0.2); color: var(--success); }
+  .btn-logout {
+    padding: 7px 14px; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 6px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 12px; transition: all 0.2s;
+  }
+  .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+  /* MAIN */
+  main { max-width: 860px; margin: 0 auto; padding: 40px 24px; }
+
+  .page-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 32px; margin-bottom: 8px; letter-spacing: -1px;
+  }
+  .page-sub { color: var(--muted); font-size: 13px; margin-bottom: 36px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px; margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: 14px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 16px;
+  }
+
+  textarea {
+    width: 100%; min-height: 100px; padding: 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 14px;
+    resize: vertical; outline: none; transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  .char-count { text-align: right; font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  .btn-predict {
+    margin-top: 14px; padding: 14px 28px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: 15px; cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-predict:hover    { opacity: 0.88; }
+  .btn-predict:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* RESULT */
+  #result { display: none; }
+
+  .severity-display {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px; background: var(--bg);
+    border-radius: 10px; margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .severity-badge {
+    padding: 8px 20px; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 18px; text-transform: uppercase; letter-spacing: 2px;
+  }
+  .sev-trivial  { background: rgba(148,163,184,0.2); color: var(--muted); }
+  .sev-minor    { background: rgba(16,185,129,0.2);  color: var(--success); }
+  .sev-normal   { background: rgba(245,158,11,0.15);  color: var(--warn); }
+  .sev-major    { background: rgba(249,115,22,0.2); color: var(--accent2); }
+  .sev-critical { background: rgba(239,68,68,0.2);   color: var(--error); }
+
+  .confidence-bar {
+    flex: 1; height: 6px; background: var(--border);
+    border-radius: 3px; overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%; background: var(--accent);
+    border-radius: 3px; transition: width 0.6s ease;
+  }
+  .confidence-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+  .prob-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    margin-bottom: 16px;
+  }
+  .prob-item {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 8px; text-align: center;
+  }
+  .prob-label { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .prob-value { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 15px; }
+
+  .drift-warn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-radius: 8px;
+    background: rgba(245,158,11,0.1); border: 1px solid var(--warn);
+    color: var(--warn); font-size: 12px; margin-bottom: 16px;
+  }
+
+  /* FEEDBACK (QA + Admin only) */
+  #feedback-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px; margin-top: 4px;
+  }
+  .feedback-label {
+    font-size: 12px; color: var(--muted); margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .feedback-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn-correct {
+    padding: 8px 18px; border-radius: 6px; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 13px;
+    border: 1px solid var(--success); color: var(--success);
+    background: rgba(16,185,129,0.1); transition: all 0.2s;
+  }
+  .btn-correct:hover { background: rgba(16,185,129,0.2); }
+
+  .btn-wrong {
+    padding: 8px 18px; border-radius: 6px; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 13px;
+    border: 1px solid var(--error); color: var(--error);
+    background: rgba(239,68,68,0.1); transition: all 0.2s;
+  }
+  .btn-wrong:hover { background: rgba(239,68,68,0.2); }
+
+  select.correction {
+    padding: 8px 12px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: 'DM Mono', monospace;
+    font-size: 13px; outline: none;
+  }
+
+  .feedback-done {
+    padding: 8px 14px; border-radius: 6px;
+    background: rgba(62,207,142,0.15); color: var(--success);
+    font-size: 13px;
+  }
+
+  .alert {
+    padding: 10px 14px; border-radius: 8px;
+    font-size: 13px; margin-bottom: 16px;
+  }
+  .alert-error { background: rgba(239,68,68,0.15); color: var(--error); border: 1px solid var(--error); }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">BugSense</span>
+  <div class="nav-links">
+    <a class="nav-link active">Predict</a>
+    <a class="nav-link" id="nav-history" href="history.html" style="display:none">History</a>
+    <a class="nav-link" id="nav-admin" href="admin.html" style="display:none">Admin</a>
+  </div>
+  <div class="nav-right">
+    <span class="badge" id="role-badge"></span>
+    <span style="font-size:13px;color:var(--muted)" id="nav-username"></span>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-title">Predict Severity</div>
+  <div class="page-sub">Enter a bug summary to classify its severity level</div>
+
+  <div class="card">
+    <div class="card-title">Bug Summary</div>
+    <textarea id="summary-input"
+      placeholder="e.g. Browser crashes when opening a PDF file in a new tab on Windows..."
+      oninput="updateCount()"></textarea>
+    <div class="char-count"><span id="char-count">0</span> characters</div>
+    <button class="btn-predict" id="predict-btn" onclick="predict()">Classify Severity</button>
+  </div>
+
+  <div id="error-msg" class="alert alert-error" style="display:none"></div>
+
+  <div class="card" id="result">
+    <div class="card-title">Result</div>
+
+    <div id="drift-warning" class="drift-warn" style="display:none">
+      ⚠ Drift detected — this input looks unusual compared to training data
+    </div>
+
+    <div class="severity-display">
+      <div class="severity-badge" id="severity-badge">—</div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" id="confidence-fill" style="width:0%"></div>
+      </div>
+      <span class="confidence-label" id="confidence-label">—</span>
+    </div>
+
+    <div class="prob-grid" id="prob-grid"></div>
+
+    <div id="feedback-section" style="display:none">
+      <div class="feedback-label">Was this prediction correct?</div>
+      <div class="feedback-btns" id="feedback-btns">
+        <button class="btn-correct" onclick="sendFeedback(true)">✓ Correct</button>
+        <button class="btn-wrong" onclick="showCorrection()">✗ Wrong — correct label:</button>
+        <select class="correction" id="correction-select" style="display:none">
+          <option value="trivial">Trivial</option>
+          <option value="minor">Minor</option>
+          <option value="normal">Normal</option>
+          <option value="major">Major</option>
+          <option value="critical">Critical</option>
+        </select>
+        <button class="btn-wrong" id="submit-correction" style="display:none" onclick="sendFeedback(false)">Submit</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// Theme toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.classList.contains('light');
+  if (isDark) {
+    html.classList.remove('light');
+    localStorage.setItem('theme', 'dark');
+    document.getElementById('theme-btn').textContent = '☀️';
+  } else {
+    html.classList.add('light');
+    localStorage.setItem('theme', 'light');
+    document.getElementById('theme-btn').textContent = '🌙';
+  }
+}
+
+// Apply saved theme on load
+document.addEventListener('DOMContentLoaded', () => {
+  const theme = localStorage.getItem('theme') || 'dark';
+  if (theme === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-btn').textContent = '🌙';
+  } else {
+    document.getElementById('theme-btn').textContent = '☀️';
+  }
+});
+
+const API = "http://localhost:8000";
+const token    = localStorage.getItem('token');
+const role     = localStorage.getItem('role');
+const username = localStorage.getItem('username');
+
+if (!token) window.location.href = 'login.html';
+
+// Setup nav based on role
+document.getElementById('nav-username').textContent = username;
+const rb = document.getElementById('role-badge');
+rb.textContent = role.replace('_', ' ');
+rb.className = `badge badge-${role}`;
+
+if (role === 'qa_engineer' || role === 'admin') {
+  document.getElementById('nav-history').style.display = 'inline';
+}
+if (role === 'admin') {
+  document.getElementById('nav-admin').style.display = 'inline';
+}
+
+let lastPredictionId = null;
+
+function updateCount() {
+  const v = document.getElementById('summary-input').value;
+  document.getElementById('char-count').textContent = v.length;
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('error-msg').style.display = 'none';
+}
+
+async function predict() {
+  const summary = document.getElementById('summary-input').value.trim();
+  if (!summary) return showError('Please enter a bug summary');
+  hideError();
+
+  const btn = document.getElementById('predict-btn');
+  btn.disabled = true;
+  btn.textContent = 'Classifying...';
+
+  try {
+    const res = await fetch(`${API}/predict`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({summary}),
+    });
+
+    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+    const data = await res.json();
+    if (!res.ok) return showError(data.detail || 'Prediction failed');
+
+    showResult(data);
+  } catch(e) {
+    showError('Cannot connect to server');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Classify Severity';
+  }
+}
+
+function showResult(data) {
+  lastPredictionId = data.prediction_id;
+  document.getElementById('result').style.display = 'block';
+
+  // Drift warning
+  document.getElementById('drift-warning').style.display = data.drift_warning ? 'flex' : 'none';
+
+  // Severity badge
+  const badge = document.getElementById('severity-badge');
+  badge.textContent = data.severity.toUpperCase();
+  badge.className = `severity-badge sev-${data.severity}`;
+
+  // Confidence bar
+  const pct = Math.round(data.confidence * 100);
+  document.getElementById('confidence-fill').style.width = pct + '%';
+  document.getElementById('confidence-label').textContent = `${pct}% confidence`;
+
+  // Probability grid
+  const grid = document.getElementById('prob-grid');
+  grid.innerHTML = Object.entries(data.probabilities).map(([label, prob]) => `
+    <div class="prob-item">
+      <div class="prob-label">${label}</div>
+      <div class="prob-value" style="color:${probColor(label, data.severity)}">${Math.round(prob*100)}%</div>
+    </div>
+  `).join('');
+
+  // Show feedback only for QA and Admin
+  const fbSection = document.getElementById('feedback-section');
+  if (role === 'qa_engineer' || role === 'admin') {
+    fbSection.style.display = 'block';
+    document.getElementById('feedback-btns').innerHTML = `
+      <button class="btn-correct" onclick="sendFeedback(true)">✓ Correct</button>
+      <button class="btn-wrong" onclick="showCorrection()">✗ Wrong — correct label:</button>
+      <select class="correction" id="correction-select" style="display:none">
+        <option value="trivial">Trivial</option>
+        <option value="minor">Minor</option>
+        <option value="normal">Normal</option>
+        <option value="major">Major</option>
+        <option value="critical">Critical</option>
+      </select>
+      <button class="btn-wrong" id="submit-correction" style="display:none" onclick="sendFeedback(false)">Submit</button>
+    `;
+  } else {
+    fbSection.style.display = 'none';
+  }
+
+  document.getElementById('result').scrollIntoView({behavior: 'smooth'});
+}
+
+function probColor(label, predicted) {
+  if (label === predicted) return 'var(--accent)';
+  return 'var(--text)';
+}
+
+function showCorrection() {
+  document.getElementById('correction-select').style.display = 'inline-block';
+  document.getElementById('submit-correction').style.display = 'inline-block';
+}
+
+async function sendFeedback(correct) {
+  if (!lastPredictionId) return;
+
+  const groundTruth = correct ? null : document.getElementById('correction-select').value;
+
+  try {
+    const res = await fetch(`${API}/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        prediction_id: lastPredictionId,
+        correct,
+        ground_truth: groundTruth,
+      }),
+    });
+
+    if (res.ok) {
+      document.getElementById('feedback-btns').innerHTML =
+        `<div class="feedback-done">✓ Feedback recorded — thank you</div>`;
+    }
+  } catch(e) {
+    console.error('Feedback failed', e);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') predict();
+});
+</script>
+</body>
+</html>

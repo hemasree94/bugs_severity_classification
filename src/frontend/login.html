@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BugSense — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f172a;
+    --surface:  #1e293b;
+    --border:   #475569;
+    --accent:   #3b82f6;
+    --accent2:  #f97316;
+    --text:     #e2e8f0;
+    --muted:    #94a3b8;
+    --success:  #10b981;
+    --error:    #ef4444;
+  }
+  :root.light {
+    --bg:       #f8fafc;
+    --surface:  #ffffff;
+    --border:   #cbd5e1;
+    --accent:   #3b82f6;
+    --accent2:  #f97316;
+    --text:     #1e293b;
+    --muted:    #64748b;
+    --success:  #10b981;
+    --error:    #ef4444;
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .orb {
+    position: fixed; border-radius: 50%; filter: blur(80px); z-index: 0; opacity: 0.15;
+  }
+  .orb-1 { width: 400px; height: 400px; background: var(--accent); top: -100px; left: -100px; }
+  .orb-2 { width: 300px; height: 300px; background: var(--accent2); bottom: -80px; right: -80px; }
+
+  .card {
+    position: relative; z-index: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px;
+    width: 100%;
+    max-width: 420px;
+    animation: fadeUp 0.5s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    color: var(--accent);
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+
+  .tagline {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 36px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .tabs {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .form-group { margin-bottom: 18px; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--bg); }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .btn:hover  { opacity: 0.9; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .alert {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .alert.error   { background: rgba(239,68,68,0.15); border: 1px solid var(--error); color: var(--error); display: block; }
+  .alert.success { background: rgba(16,185,129,0.15); border: 1px solid var(--success); color: var(--success); display: block; }
+
+  .role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-left: 6px;
+  }
+  .role-developer  { background: rgba(59,130,246,0.2); color: var(--accent); }
+  .role-qa_engineer { background: rgba(249,115,22,0.2); color: var(--accent2); }
+  .role-admin      { background: rgba(16,185,129,0.2); color: var(--success); }
+
+  .theme-toggle-login {
+    position: fixed; top: 20px; right: 20px; z-index: 10;
+    padding: 10px 14px; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 16px; transition: all 0.2s;
+  }
+  .theme-toggle-login:hover { background: var(--border); }
+</style>
+</head>
+<body>
+<button class="theme-toggle-login" id="theme-btn-login" onclick="toggleTheme()">☀️</button>
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="card">
+  <div class="logo">BugSense</div>
+  <div class="tagline">Bug Severity Classification System</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('login')">Login</button>
+    <button class="tab" onclick="showTab('signup')">Sign Up</button>
+  </div>
+
+  <div id="alert" class="alert"></div>
+
+  <!-- Login Form -->
+  <div id="login-form">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="your username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn" onclick="login()">Login</button>
+  </div>
+
+  <!-- Signup Form -->
+  <div id="signup-form" style="display:none">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="signup-username" placeholder="choose a username">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="signup-email" placeholder="you@example.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="signup-password" placeholder="min 6 characters">
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="signup-role">
+        <option value="developer">Developer</option>
+        <option value="qa_engineer">QA Engineer</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn" onclick="signup()">Create Account</button>
+  </div>
+</div>
+
+<script>
+// Theme toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.classList.contains('light');
+  if (isDark) {
+    html.classList.remove('light');
+    localStorage.setItem('theme', 'dark');
+    document.getElementById('theme-btn-login').textContent = '☀️';
+  } else {
+    html.classList.add('light');
+    localStorage.setItem('theme', 'light');
+    document.getElementById('theme-btn-login').textContent = '🌙';
+  }
+}
+
+// Apply saved theme on load
+document.addEventListener('DOMContentLoaded', () => {
+  const theme = localStorage.getItem('theme') || 'dark';
+  if (theme === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-btn-login').textContent = '🌙';
+  } else {
+    document.getElementById('theme-btn-login').textContent = '☀️';
+  }
+});
+
+const API = "http://localhost:8000";
+
+function showTab(tab) {
+  document.getElementById('login-form').style.display  = tab === 'login'  ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'signup'));
+  });
+  hideAlert();
+}
+
+function showAlert(msg, type) {
+  const el = document.getElementById('alert');
+  el.textContent = msg;
+  el.className = `alert ${type}`;
+}
+function hideAlert() {
+  document.getElementById('alert').className = 'alert';
+}
+
+async function login() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!username || !password) return showAlert('Please fill in all fields', 'error');
+
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password}),
+    });
+    const data = await res.json();
+    if (!res.ok) return showAlert(data.detail || 'Login failed', 'error');
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('role', data.role);
+    localStorage.setItem('username', data.username);
+    window.location.href = 'index.html';
+  } catch(e) {
+    showAlert('Cannot connect to server', 'error');
+  }
+}
+
+async function signup() {
+  const username = document.getElementById('signup-username').value.trim();
+  const email    = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const role     = document.getElementById('signup-role').value;
+  if (!username || !email || !password) return showAlert('Please fill in all fields', 'error');
+
+  try {
+    const res = await fetch(`${API}/auth/signup`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, email, password, role}),
+    });
+    const data = await res.json();
+    if (!res.ok) return showAlert(data.detail || 'Signup failed', 'error');
+    showAlert('Account created! Please login.', 'success');
+    setTimeout(() => showTab('login'), 1500);
+  } catch(e) {
+    showAlert('Cannot connect to server', 'error');
+  }
+}
+
+document.addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+if (localStorage.getItem('token')) window.location.href = 'index.html';
+</script>
+</body>
+</html>
