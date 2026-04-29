@@ -1,7 +1,8 @@
 version: '3.9'
 
 services:
-  # PostgreSQL Database
+
+  # --- PostgreSQL for App ---
   postgres:
     image: postgres:16-alpine
     container_name: bugs_postgres
@@ -21,7 +22,7 @@ services:
     networks:
       - bugs_network
 
-  # MySQL (if needed for compatibility)
+  # --- MySQL (optional) ---
   mysql:
     image: mysql:8.0
     container_name: bugs_mysql
@@ -42,7 +43,7 @@ services:
     networks:
       - bugs_network
 
-  # FastAPI ML Service
+  # --- FastAPI ML Service ---
   api:
     build:
       context: .
@@ -71,7 +72,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Airflow PostgreSQL (separate for Airflow metadata)
+  # --- Airflow PostgreSQL (separate metadata DB) ---
   airflow-postgres:
     image: postgres:16-alpine
     container_name: airflow_postgres
@@ -89,7 +90,38 @@ services:
     networks:
       - bugs_network
 
-  # Airflow Webserver
+  # --- Airflow DB Init (runs once then exits) ---
+  airflow-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    container_name: airflow_init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__DAGS_FOLDER: /home/airflow/src
+    command: >
+      bash -c "airflow db migrate &&
+               airflow users create
+               --username admin
+               --password admin
+               --firstname Hema
+               --lastname Sree
+               --role Admin
+               --email hemasree@example.com || true"
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/home/airflow/src
+      - airflow_data:/home/airflow
+    networks:
+      - bugs_network
+    restart: "no"
+
+  # --- Airflow Webserver ---
   airflow-webserver:
     build:
       context: .
@@ -98,15 +130,17 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__DAGS_FOLDER: /home/airflow/src
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
     command: airflow webserver
     ports:
       - "8080:8080"
     depends_on:
       airflow-postgres:
         condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
     volumes:
       - ./src:/home/airflow/src
       - ./logs:/home/airflow/logs
@@ -119,7 +153,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Airflow Scheduler
+  # --- Airflow Scheduler ---
   airflow-scheduler:
     build:
       context: .
@@ -128,13 +162,15 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__DAGS_FOLDER: /home/airflow/src
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
     command: airflow scheduler
     depends_on:
       airflow-postgres:
         condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
     volumes:
       - ./src:/home/airflow/src
       - ./logs:/home/airflow/logs
@@ -142,14 +178,14 @@ services:
     networks:
       - bugs_network
 
-  # Prometheus Monitoring
+  # --- Prometheus ---
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml       # fixed filename
       - ./alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus_data:/prometheus
     command:
@@ -158,7 +194,7 @@ services:
     networks:
       - bugs_network
 
-  # Grafana Dashboard
+  # --- Grafana ---
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -169,13 +205,14 @@ services:
       GF_INSTALL_PLUGINS: 'grafana-piechart-panel'
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana.json:/etc/grafana/provisioning/dashboards/dashboard.json
+      - ./grafana_provisioning:/etc/grafana/provisioning          # provisioning folder
+      - ./grafana_provisioning/dashboards/grafana_dashboard.json:/etc/grafana/provisioning/dashboards/grafana_dashboard.json
     depends_on:
       - prometheus
     networks:
       - bugs_network
 
-  # Alertmanager
+  # --- AlertManager ---
   alertmanager:
     image: prom/alertmanager:latest
     container_name: alertmanager
@@ -190,7 +227,7 @@ services:
     networks:
       - bugs_network
 
-  # Node Exporter (System Metrics)
+  # --- Node Exporter ---
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node_exporter

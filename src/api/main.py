@@ -13,7 +13,7 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 # --- DRIFT DETECTION ---
-from drift_detection import run_drift_detection
+from src.drift_detection import run_drift_detection
 
 # --- PROMETHEUS ---
 from prometheus_client import (
